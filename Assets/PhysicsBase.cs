@@ -10,9 +10,19 @@ public class PhysicsBase : MonoBehaviour
     public float desiredx;
     public bool grounded;
 
+
+    Animator animator;
+    Rigidbody2D rb;
+
+    private void Awake()
+    {
+        animator = GetComponent<Animator>();
+    }
+
     // Start is called before the first frame update
     void Start() // _its like _ready()
     {
+
         
     }
 
@@ -44,11 +54,13 @@ public class PhysicsBase : MonoBehaviour
     {
         Vector2 acceleration = 9.81f * Vector2.down * gravityFactor;
         velocity += acceleration * Time.fixedDeltaTime;
+        animator.SetFloat("Velocity", rb.velocity.x);
         velocity.x = desiredx;
         Vector2 move = velocity * Time.fixedDeltaTime;
 
         Movement(new Vector2(move.x,0), true);
         Movement(new Vector2(0, move.y), false);
+
 
         if (Input.GetButton("Jump") && grounded) velocity.y = 6.5f;
 
