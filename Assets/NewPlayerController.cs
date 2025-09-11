@@ -18,6 +18,8 @@ public class NewPlayerController : MonoBehaviour
     public float jumpResistance;
     public float jumpMultiplier;
 
+    public bool wasGrounded;
+
     public bool isJumping;
 
     public bool isFalling;
@@ -54,9 +56,10 @@ public class NewPlayerController : MonoBehaviour
     {
 
         // uses a capsule cast to check if there is a collision directly below the player
+        wasGrounded = grounded;
         grounded = Physics2D.CapsuleCast(transform.position, new Vector2(1f,2.1f), CapsuleDirection2D.Vertical, 0f, Vector2.down, 0.05f);
 
-        if ((grounded == true) && (isFalling == true))
+        if ((grounded == true) && (!wasGrounded))
         {
             animator.SetTrigger("HitGround");
             isJumping = false;
@@ -76,6 +79,8 @@ public class NewPlayerController : MonoBehaviour
         }
         else
         {
+            if (facingDirection == 1 && horizontalInput > 0) horizontalInput *= .3f;
+            else if (facingDirection == -1 && horizontalInput < 0) horizontalInput *= .3f;
             rb.velocity += new Vector2(horizontalInput * movementMultiplier / jumpResistance, 0);
         }
 
@@ -98,8 +103,12 @@ public class NewPlayerController : MonoBehaviour
     {
         if (isDashing) return;
 
+        // reduces vertical intensity on the dash
+        direction.y *= .1f;
+
         isDashing = true;
         animator.SetTrigger("Dash");
+        animator.SetBool("Dashing", true);
 
         rb.velocity = direction.normalized * dashMultiplier;
         
@@ -111,6 +120,7 @@ public class NewPlayerController : MonoBehaviour
         rb.velocity = new Vector2(rb.velocity.x * 0.5f, rb.velocity.y); 
 
         animator.SetTrigger("DashOver");
+        animator.SetBool("Dashing", false);
         isDashing = false;
     }
     void CheckThrow()
@@ -161,7 +171,7 @@ public class NewPlayerController : MonoBehaviour
             Movement();
         }
         
-
+        wasGrounded = grounded;
         
 
         //animator.SetFloat("Velocity", Mathf.Abs(rb.velocity.x));
