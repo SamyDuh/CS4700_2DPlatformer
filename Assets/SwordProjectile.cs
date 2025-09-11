@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
+using System.Threading.Tasks;
 
 public class SwordProjectile : MonoBehaviour
 {
@@ -54,6 +56,8 @@ public class SwordProjectile : MonoBehaviour
         isStuck = false;
         isReturning = false;
 
+        //flyingTimer();
+
 
     }
 
@@ -74,6 +78,7 @@ public class SwordProjectile : MonoBehaviour
 
     public void stickToWall()
     {
+        isMoving = false;
         if (direction.x  < 0f) transform.rotation = Quaternion.Euler(0f, 0f, 180f);
         else transform.rotation = Quaternion.identity;
 
@@ -83,10 +88,21 @@ public class SwordProjectile : MonoBehaviour
 
     public void returnToPlayer()
     {
-        
+        if (isMoving) return;
         isReturning = true;
         animator.SetTrigger("Spin");
         Physics2D.IgnoreCollision(swordCollider, playerCollider, true);
+
+    }
+
+    private async void flyingTimer()
+    {
+        await Task.Delay(300);
+        if (!isStuck)
+        {
+            isMoving = false;
+            returnToPlayer();
+        }
 
     }
 
