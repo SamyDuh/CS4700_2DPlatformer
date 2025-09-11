@@ -8,6 +8,7 @@ public class PlayerController : MonoBehaviour {
     public float gravityFactor;
     public float desiredx;
     public bool grounded;
+    public bool jumping;
 
     Animator animator;
     Rigidbody2D rb;
@@ -44,7 +45,10 @@ public class PlayerController : MonoBehaviour {
                 if (results[i].normal.y > .3f)
                 {
                     grounded = true;
-                    animator.SetTrigger("Grounded");
+                    if (jumping == true) {
+                        animator.SetTrigger("Grounded");
+                        jumping = false;
+                    }
                     velocity.y = 0;
                 }
                 return;
@@ -78,6 +82,8 @@ public class PlayerController : MonoBehaviour {
         {
             velocity.y = 6.5f;
             animator.SetTrigger("Jump");
+            grounded = false;
+            jumping = true;
             //animator.SetBool("Jumping", false);
         }
 
