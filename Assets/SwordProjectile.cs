@@ -12,8 +12,11 @@ public class SwordProjectile : MonoBehaviour
     public float speed = 20f;
 
     public bool isMoving;
+
     public bool isStuck;
+
     public bool isReturning;
+
 
     private Vector2 direction;
 

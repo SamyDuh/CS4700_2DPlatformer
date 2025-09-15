@@ -12,10 +12,17 @@ public class NewPlayerController : MonoBehaviour
 
     public Vector2 velocity;
     public bool grounded;
+
     public float dashMultiplier;
+
+    public float gravityJumpMultiplier;
+
     public float gravityMultiplier;
+
     public float movementMultiplier;
+
     public float jumpResistance;
+
     public float jumpMultiplier;
 
     public bool wasGrounded;
@@ -24,11 +31,19 @@ public class NewPlayerController : MonoBehaviour
 
     public bool isFalling;
 
-    public bool hasSword;
+    public bool hasSword = true;
 
     public bool isDashing;
 
+    public bool holdingJump;
+
+    public bool hasThrownSword;
+
+    public bool hasDashed;
+
     public int facingDirection = 1;
+
+    public bool groundLock = false;
 
     private GameObject swordOutThere;
 
@@ -56,19 +71,24 @@ public class NewPlayerController : MonoBehaviour
     {
 
         // uses a capsule cast to check if there is a collision directly below the player
-        wasGrounded = grounded;
         grounded = Physics2D.CapsuleCast(transform.position, new Vector2(1f,2.1f), CapsuleDirection2D.Vertical, 0f, Vector2.down, 0.05f);
 
-        if ((grounded == true) && (!wasGrounded))
+
+        if ((grounded) && (!wasGrounded))
         {
             animator.SetTrigger("HitGround");
             isJumping = false;
             isFalling = false;
+
+            hasThrownSword = false;
+            hasDashed = false;
+
+
         }
         
-       
+    
     }
-
+    
     void Movement()
     {
         float horizontalInput = Input.GetAxisRaw("Horizontal");
@@ -101,10 +121,13 @@ public class NewPlayerController : MonoBehaviour
 
    private async void Dash(Vector2 direction)
     {
+        hasDashed = true;
         if (isDashing) return;
 
+        rb.gravityScale = 0.0f;
+
         // reduces vertical intensity on the dash
-        direction.y *= .1f;
+        direction.y *= 0.0f;
 
         isDashing = true;
         animator.SetTrigger("Dash");
@@ -115,18 +138,20 @@ public class NewPlayerController : MonoBehaviour
         facingDirection = direction.x >= 0 ? 1 : -1;
         sr.flipX = facingDirection == -1;
 
-        await Task.Delay(50);
+        await Task.Delay(175);
 
         rb.velocity = new Vector2(rb.velocity.x * 0.5f, rb.velocity.y); 
 
         animator.SetTrigger("DashOver");
         animator.SetBool("Dashing", false);
         isDashing = false;
+
+        rb.gravityScale = 4.0f;
     }
     void CheckThrow()
     {
 
-        if (Input.GetMouseButtonDown(1) && (!isDashing))
+        if (Input.GetMouseButtonDown(1) && (!isDashing) && (!hasDashed)) 
         {
 
             Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -139,8 +164,9 @@ public class NewPlayerController : MonoBehaviour
             return;
         }
 
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && (!hasThrownSword))
         {
+            hasThrownSword = true;
             if (hasSword)
             {
                 hasSword = false;
@@ -167,28 +193,66 @@ public class NewPlayerController : MonoBehaviour
     {
         if (!isDashing)
         {
-            Gravity();
+            //Gravity();
+            grounded = Physics2D.CapsuleCast(transform.position, new Vector2(1f, 2.1f), CapsuleDirection2D.Vertical, 0f, Vector2.down, 0.05f);
+
+
+            if ((grounded) && (!wasGrounded))
+            {
+                
+                //animator.SetTrigger("HitGround");
+                isJumping = false;
+                isFalling = false;
+
+                hasThrownSword = false;
+                hasDashed = false;
+
+
+            }
             Movement();
         }
-        
-        wasGrounded = grounded;
-        
 
+        if (rb.velocity.y > 0 && isJumping && !holdingJump)
+        {
+            //float gravity = Vector2.down * gravityJumpMultiplier * Time.fixedDeltaTime;
+            //rb.velocity += Vector2.down * gravityJumpMultiplier * Time.fixedDeltaTime;
+            rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * .5f);
+        }
+
+        if (grounded && !wasGrounded)
+        {
+            animator.SetBool("Grounded", true);
+        }
+
+        if (!grounded && wasGrounded)
+        {
+            animator.SetBool("Grounded", false);
+        }
+
+        wasGrounded = grounded;
         //animator.SetFloat("Velocity", Mathf.Abs(rb.velocity.x));
 
-       
+
     }
 
     private void Update()
     {
+
+        holdingJump = Input.GetButton("Jump");
+
         animator.SetFloat("Velocity", Mathf.Abs(rb.velocity.x));
         animator.SetFloat("Fall Velocity", rb.velocity.y);
         CheckThrow();
 
-        if ((Mathf.Abs(rb.velocity.y) > .5) && (!isFalling) && (!grounded))
+        if ((Mathf.Abs(rb.velocity.y) < .5) && (!isFalling) && (!grounded))
         {
+            print("IM FALLING OVAH HERE");
             isFalling = true;
             animator.SetTrigger("Falling");
         }
+
+       
+
+       
     }
 }

@@ -545,7 +545,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 3fadde41f252d124faa83b2599faceb3, type: 3}
+  m_Sprite: {fileID: 21300000, guid: b4554811316b7fc4bb83a5cc03a62b07, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -621,7 +621,7 @@ Rigidbody2D:
   m_Mass: 1
   m_LinearDrag: 0
   m_AngularDrag: 0
-  m_GravityScale: 1
+  m_GravityScale: 4
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -670,16 +670,21 @@ MonoBehaviour:
   velocity: {x: 0, y: 0}
   grounded: 0
   dashMultiplier: 20
+  gravityJumpMultiplier: 0
   gravityMultiplier: 4
   movementMultiplier: 5
   jumpResistance: 50
-  jumpMultiplier: 8
+  jumpMultiplier: 15
   wasGrounded: 0
   isJumping: 0
   isFalling: 0
   hasSword: 0
   isDashing: 0
+  holdingJump: 0
+  hasThrownSword: 0
+  hasDashed: 0
   facingDirection: 1
+  groundLock: 0
 --- !u!1 &616090305
 GameObject:
   m_ObjectHideFlags: 0
