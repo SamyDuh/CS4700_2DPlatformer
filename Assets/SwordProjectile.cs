@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 using System.Threading.Tasks;
+using UnityEngine.Rendering;
 
 public class SwordProjectile : MonoBehaviour
 {
@@ -17,6 +18,10 @@ public class SwordProjectile : MonoBehaviour
 
     public bool isReturning;
 
+    public bool bounceCooldown;
+
+    private bool isCoolingDown = false;
+
 
     private Vector2 direction;
 
@@ -27,6 +32,7 @@ public class SwordProjectile : MonoBehaviour
     private Animator animator;
 
     private GameObject player;
+
     private NewPlayerController playerScript;
 
     void OnDrawGizmos()
@@ -75,18 +81,25 @@ public class SwordProjectile : MonoBehaviour
     {
         Vector2 pointPosition = transform.position + (Vector3)(direction * tipOffset);
         // is supposed to check for horizontal collisions to the right but it doesnt really work lol
-        isStuck = Physics2D.BoxCast(pointPosition, new Vector2(.3f, .2f), 0f, direction, .1f);
-        if (isStuck) stickToWall();
+        Collider2D hitCast = Physics2D.OverlapBox(transform.position + (Vector3)(direction * tipOffset), new Vector2(0.1f, 0.1f), 0f, LayerMask.GetMask("Wall Tiles"));
+
+        if (hitCast != null)
+        {
+            transform.position = hitCast.ClosestPoint(transform.position) - direction * (tipOffset - 0.05f);
+            isStuck = true;
+            stickToWall();
+        }
     }
 
     public void stickToWall()
     {
+
         isMoving = false;
         if (direction.x  < 0f) transform.rotation = Quaternion.Euler(0f, 0f, 180f);
         else transform.rotation = Quaternion.identity;
 
         animator.SetTrigger("Bounce");
-        Physics2D.IgnoreCollision(swordCollider, playerCollider, false);
+        //Physics2D.IgnoreCollision(swordCollider, playerCollider, false);
     }
 
     public void returnToPlayer()
@@ -112,11 +125,12 @@ public class SwordProjectile : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
-        if (!isStuck)
+        if (!isStuck && !isReturning)
         {
             //checkStuck();
             transform.position += (Vector3)(direction * speed * Time.fixedDeltaTime);
         }
+
 
         if (isReturning)
         {
@@ -132,8 +146,39 @@ public class SwordProjectile : MonoBehaviour
         }
     }
 
+    private async void initiateBounceCooldown()
+    {
+        if (bounceCooldown) return; 
+
+        bounceCooldown = true;
+  
+
+        await Task.Delay(200);
+
+        bounceCooldown = false;
+  
+    }
+
     private void Update()
     {
+        if (isStuck && !isReturning && !bounceCooldown)
+        {
+            Collider2D hit = Physics2D.OverlapBox(
+                swordCollider.bounds.center,
+                swordCollider.bounds.size,
+                0f,
+                LayerMask.GetMask("Player")
+);
+            
+            if (hit != null && !bounceCooldown)
+            {
+                //bounceCooldown = true;
+                animator.SetTrigger("Bounce");
+                initiateBounceCooldown();
+                playerScript.SwordBounce();
+            }
+        }
+
         if (!isStuck)
         {
             checkStuck();

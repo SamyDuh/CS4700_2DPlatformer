@@ -15,6 +15,8 @@ public class NewPlayerController : MonoBehaviour
 
     public float dashMultiplier;
 
+    public float bounceMultiplier;
+
     public float gravityJumpMultiplier;
 
     public float gravityMultiplier;
@@ -99,8 +101,8 @@ public class NewPlayerController : MonoBehaviour
         }
         else
         {
-            if (facingDirection == 1 && horizontalInput > 0) horizontalInput *= .3f;
-            else if (facingDirection == -1 && horizontalInput < 0) horizontalInput *= .3f;
+            //if (facingDirection == 1 && horizontalInput > 0) horizontalInput *= .3f;
+            //else if (facingDirection == -1 && horizontalInput < 0) horizontalInput *= .3f;
             rb.velocity += new Vector2(horizontalInput * movementMultiplier / jumpResistance, 0);
         }
 
@@ -194,7 +196,7 @@ public class NewPlayerController : MonoBehaviour
         if (!isDashing)
         {
             //Gravity();
-            grounded = Physics2D.CapsuleCast(transform.position, new Vector2(1f, 2.1f), CapsuleDirection2D.Vertical, 0f, Vector2.down, 0.05f);
+            grounded = Physics2D.CapsuleCast(transform.position, new Vector2(1f, 2.1f), CapsuleDirection2D.Vertical, 0f, Vector2.down, 0.03f);
 
 
             if ((grounded) && (!wasGrounded))
@@ -235,8 +237,18 @@ public class NewPlayerController : MonoBehaviour
 
     }
 
+    public void SwordBounce()
+    {
+        animator.SetTrigger("Bounce");
+        isJumping = false;
+        rb.velocity = new Vector2(rb.velocity.x, bounceMultiplier);
+    }
+
     private void Update()
     {
+
+
+        if (grounded) hasThrownSword = false;
 
         holdingJump = Input.GetButton("Jump");
 
@@ -246,10 +258,11 @@ public class NewPlayerController : MonoBehaviour
 
         if ((Mathf.Abs(rb.velocity.y) < .5) && (!isFalling) && (!grounded))
         {
-            print("IM FALLING OVAH HERE");
+            
             isFalling = true;
             animator.SetTrigger("Falling");
         }
+
 
        
 
