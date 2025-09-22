@@ -9,7 +9,7 @@ public class CreditsScript : MonoBehaviour
 
     async void Start()
     {
-        await Task.Delay(50000);
+        await Task.Delay(60000);
         returnToTitle();
     }
 
