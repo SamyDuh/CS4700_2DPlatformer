@@ -10,7 +10,7 @@ public class SwordProjectile : MonoBehaviour
 
     public float tipOffset = 1.4f;
 
-    public float speed = 20f;
+    public float speed = 30f;
 
     public bool isMoving;
 
@@ -19,6 +19,8 @@ public class SwordProjectile : MonoBehaviour
     public bool isReturning;
 
     public bool bounceCooldown;
+
+    public bool plinkCooldown;
 
     private bool isCoolingDown = false;
 
@@ -35,16 +37,12 @@ public class SwordProjectile : MonoBehaviour
 
     private NewPlayerController playerScript;
 
-    void OnDrawGizmos()
-    {
-        Gizmos.color = Color.red;
-        Vector3 tip = transform.position + transform.right * tipOffset;
-        Gizmos.DrawSphere(tip, .3f);
+    public AudioClip swordPlink;
+    public AudioClip swordWoosh;
+    public AudioClip dirtHit;
+    private AudioSource audioSource;
 
-        // Optional: Draw cast direction line
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawLine(tip, tip + (Vector3)(direction * 0.1f));
-    }
+
 
     // Start is called before the first frame update
     void Start()
@@ -52,6 +50,7 @@ public class SwordProjectile : MonoBehaviour
         player = GameObject.FindGameObjectWithTag("Player");
         playerScript = player.GetComponent<NewPlayerController>();
 
+        audioSource = GetComponent<AudioSource>();
         animator = GetComponent<Animator>();
         swordCollider = GetComponent<Collider2D>();
         playerCollider = GameObject.FindGameObjectWithTag("Player").GetComponent<Collider2D>();
@@ -65,7 +64,7 @@ public class SwordProjectile : MonoBehaviour
         isStuck = false;
         isReturning = false;
 
-        //flyingTimer();
+        flyingTimer();
 
 
     }
@@ -80,20 +79,38 @@ public class SwordProjectile : MonoBehaviour
     public void checkStuck()
     {
         Vector2 pointPosition = transform.position + (Vector3)(direction * tipOffset);
-        // is supposed to check for horizontal collisions to the right but it doesnt really work lol
-        Collider2D hitCast = Physics2D.OverlapBox(transform.position + (Vector3)(direction * tipOffset), new Vector2(0.1f, 0.1f), 0f, LayerMask.GetMask("Wall Tiles"));
+
+        Collider2D hitCast = Physics2D.OverlapBox(transform.position + (Vector3)(direction * tipOffset), new Vector2(0.1f, 0.1f), 0f, LayerMask.GetMask("Wall Tiles", "Ground Tiles"));
 
         if (hitCast != null)
         {
-            transform.position = hitCast.ClosestPoint(transform.position) - direction * (tipOffset - 0.05f);
-            isStuck = true;
-            stickToWall();
+
+
+            bool hitGround = hitCast.gameObject.layer == LayerMask.NameToLayer("Ground Tiles");
+            bool hitWall = hitCast.gameObject.layer == LayerMask.NameToLayer("Wall Tiles");
+
+            if (hitGround || hitWall)
+            {
+                if (hitGround)
+                {
+                    if (!plinkCooldown)
+                    {
+                        initiatePlinkCooldown();
+                        audioSource.PlayOneShot(swordPlink);
+                    }
+                    returnToPlayer();
+                    return;
+                }
+                transform.position = hitCast.ClosestPoint(transform.position) - direction * (tipOffset - 0.05f);
+                isStuck = true;
+                stickToWall();
+            }
         }
     }
 
     public void stickToWall()
     {
-
+        audioSource.PlayOneShot(dirtHit);
         isMoving = false;
         if (direction.x  < 0f) transform.rotation = Quaternion.Euler(0f, 0f, 180f);
         else transform.rotation = Quaternion.identity;
@@ -104,7 +121,15 @@ public class SwordProjectile : MonoBehaviour
 
     public void returnToPlayer()
     {
-        if (isMoving) return;
+        if (isMoving) isMoving = false;
+
+        if (!plinkCooldown)
+        {
+            audioSource.clip = swordWoosh;
+            audioSource.loop = true;
+            audioSource.Play();
+        }
+
         isReturning = true;
         animator.SetTrigger("Spin");
         Physics2D.IgnoreCollision(swordCollider, playerCollider, true);
@@ -113,10 +138,9 @@ public class SwordProjectile : MonoBehaviour
 
     private async void flyingTimer()
     {
-        await Task.Delay(300);
+        await Task.Delay(1500);
         if (!isStuck)
         {
-            isMoving = false;
             returnToPlayer();
         }
 
@@ -128,17 +152,18 @@ public class SwordProjectile : MonoBehaviour
         if (!isStuck && !isReturning)
         {
             //checkStuck();
-            transform.position += (Vector3)(direction * speed * Time.fixedDeltaTime);
+            transform.position += (Vector3)(direction * speed * 2 * Time.fixedDeltaTime);
         }
 
 
         if (isReturning)
         {
             Vector2 directionToPlayer = (playerTransform.transform.position - transform.position).normalized;
-            transform.position += (Vector3)(directionToPlayer * speed * Time.fixedDeltaTime);
+            transform.position += (Vector3)(directionToPlayer * speed * 3 * Time.fixedDeltaTime);
 
             if (Vector2.Distance(transform.position, playerTransform.position) < 0.5f)
             {
+                audioSource.Stop();
                 isReturning = false;
                 playerScript.grabSword();
                 Destroy(gameObject);
@@ -157,6 +182,19 @@ public class SwordProjectile : MonoBehaviour
 
         bounceCooldown = false;
   
+    }
+
+    private async void initiatePlinkCooldown()
+    {
+        if (plinkCooldown) return;
+
+        plinkCooldown = true;
+
+
+        await Task.Delay(300);
+
+        plinkCooldown = false;
+
     }
 
     private void Update()

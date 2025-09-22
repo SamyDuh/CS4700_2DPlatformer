@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Threading.Tasks;
+using UnityEngine.SceneManagement;
 
 
 public class NewPlayerController : MonoBehaviour
@@ -14,6 +15,8 @@ public class NewPlayerController : MonoBehaviour
     public bool grounded;
 
     public float dashMultiplier;
+
+    public float sprintMultiplier = 10f;
 
     public float bounceMultiplier;
 
@@ -49,6 +52,15 @@ public class NewPlayerController : MonoBehaviour
 
     private GameObject swordOutThere;
 
+
+    //sound effects
+    public AudioClip swordThrow;
+    public AudioClip swordBounce;
+    public AudioClip dash;
+    public AudioClip getMoon;
+
+    private AudioSource audioSource;
+
     Animator animator;
     Rigidbody2D rb;
     SpriteRenderer sr;
@@ -57,6 +69,7 @@ public class NewPlayerController : MonoBehaviour
     void Start()
     {
 
+        audioSource = GetComponent<AudioSource>();
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
@@ -67,6 +80,7 @@ public class NewPlayerController : MonoBehaviour
     public void grabSword()
     {
         hasSword = true;
+        animator.SetBool("HasSword", true);
     }
 
     void Gravity()
@@ -93,11 +107,24 @@ public class NewPlayerController : MonoBehaviour
     
     void Movement()
     {
+        
+        float currentMultiplier = movementMultiplier;
+
+        /*if (Input.GetButton("Sprint") && grounded)
+        {
+            animator.SetBool("Sprinting", true);
+            currentMultiplier *= sprintMultiplier;
+        } else
+        {
+            animator.SetBool("Sprinting", false);
+        }
+        */
+        
         float horizontalInput = Input.GetAxisRaw("Horizontal");
         if (grounded)
         {
 
-            rb.velocity = new Vector2(horizontalInput * movementMultiplier, rb.velocity.y);
+            rb.velocity = new Vector2(horizontalInput * currentMultiplier, rb.velocity.y);
         }
         else
         {
@@ -123,6 +150,7 @@ public class NewPlayerController : MonoBehaviour
 
    private async void Dash(Vector2 direction)
     {
+        audioSource.PlayOneShot(dash);
         hasDashed = true;
         if (isDashing) return;
 
@@ -168,9 +196,13 @@ public class NewPlayerController : MonoBehaviour
 
         if (Input.GetMouseButtonDown(0) && (!hasThrownSword))
         {
+            
             hasThrownSword = true;
             if (hasSword)
             {
+                audioSource.PlayOneShot(swordThrow);
+                animator.SetTrigger("ThrowSword");
+                animator.SetBool("HasSword", false);
                 hasSword = false;
                 Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
                 Vector2 direction = mousePosition - transform.position;
@@ -237,18 +269,35 @@ public class NewPlayerController : MonoBehaviour
 
     }
 
+    
+
     public void SwordBounce()
     {
+        audioSource.PlayOneShot(swordBounce);
         animator.SetTrigger("Bounce");
+        grounded = false;
         isJumping = false;
+        hasDashed = false;
         rb.velocity = new Vector2(rb.velocity.x, bounceMultiplier);
     }
 
     private void Update()
     {
 
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            SceneManager.LoadScene("Menu");
+        }
 
-        if (grounded) hasThrownSword = false;
+        if (grounded)
+        {
+            hasThrownSword = false;
+            hasDashed = false;
+
+            /*if (Input.GetButton("Sprint")){
+                rb.velocity = new Vector2(rb.velocity.x * sprintMultiplier, rb.velocity.y);
+            }*/
+        }
 
         holdingJump = Input.GetButton("Jump");
 
@@ -267,5 +316,21 @@ public class NewPlayerController : MonoBehaviour
        
 
        
+    }
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.gameObject.layer == LayerMask.NameToLayer("DeathBlocks"))
+        {
+            print("Im dead!");
+
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+
+
+        if (other.gameObject.layer == LayerMask.NameToLayer("ExitWhiteShadow"))
+        {
+            SceneManager.LoadScene("Credits");
+        }
     }
 }
